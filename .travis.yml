@@ -14,17 +14,17 @@ matrix:
 addons:
   apt:
     sources:
-    - llvm-toolchain-trusty-4.0
     - ubuntu-toolchain-r-test
+    - llvm-toolchain-trusty
     packages:
-    - clang-4.0
-    - clang-4.0-dev
+    - clang-6.0
+    - clang-6.0-dev
     - cmake
     - cmake-data
     - libz-dev
     - libedit-dev
-    - llvm-4.0
-    - llvm-4.0-dev
+    - llvm-6.0
+    - llvm-6.0-dev
     - libstdc++-6-dev
     - python-dev
 
@@ -52,8 +52,8 @@ script:
 - 
   if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
     rm -rf build && mkdir build && pushd build;
-    export LLVM_DIR="/usr/lib/llvm-4.0/lib/cmake/llvm/";
-    export CC="clang-4.0" CXX="clang++-4.0";
+    export LLVM_DIR="/usr/lib/llvm-6.0/lib/cmake/llvm/";
+    export CC="clang-6.0" CXX="clang++-6.0";
     cmake ..;
     if make -j3; then
       export FCD="build/fcd";
