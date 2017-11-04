@@ -139,7 +139,7 @@ namespace
 		{
 			if (auto call = dyn_cast<CallInst>(use.getUser()))
 			{
-				unique_ptr<Instruction> eraseIfNecessary;
+				llvm::unique_value eraseIfNecessary;
 				Value* operand = call->getOperand(stringArgumentIndex);
 				if (auto constant = dyn_cast<ConstantExpr>(operand))
 				{
@@ -490,7 +490,7 @@ namespace
 					if (auto load = dyn_cast<LoadInst>(prev->getOperand(2)))
 					if (auto constantExpr = dyn_cast<ConstantExpr>(load->getPointerOperand()))
 					{
-						unique_ptr<Instruction> inst(constantExpr->getAsInstruction());
+						llvm::unique_value inst(constantExpr->getAsInstruction());
 						if (auto int2ptr = dyn_cast<IntToPtrInst>(inst.get()))
 						{
 							auto value = cast<ConstantInt>(int2ptr->getOperand(0));

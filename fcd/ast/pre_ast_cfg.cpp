@@ -50,6 +50,11 @@ void PreAstBasicBlockEdge::setTo(PreAstBasicBlock& newTo)
 	llvm_unreachable("Edge not found in predecessor!");
 }
 
+PreAstBasicBlock::PreAstBasicBlock(PreAstContext* parent)
+: parent(parent)
+{
+}
+
 PreAstBasicBlock::PreAstBasicBlock(PreAstBasicBlock&& that)
 : block(nullptr)
 {

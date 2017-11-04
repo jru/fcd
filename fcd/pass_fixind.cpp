@@ -66,7 +66,7 @@ namespace
 			auto& context = module.getContext();
 			Type* intptrTy = module.getDataLayout().getIntPtrType(Type::getInt8PtrTy(context));
 			Type* voidTy = Type::getVoidTy(context);
-			auto indirectJump = cast<Function>(module.getOrInsertFunction("__indirect_jump", voidTy, intptrTy, nullptr));
+			auto indirectJump = cast<Function>(module.getOrInsertFunction("__indirect_jump", voidTy, intptrTy));
 			indirectJump->setDoesNotReturn();
 			
 			for (Value* user : vector<Value*>(callIntrin.user_begin(), callIntrin.user_end()))

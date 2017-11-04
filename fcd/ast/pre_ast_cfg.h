@@ -29,6 +29,7 @@
 class AstContext;
 class Expression;
 struct PreAstBasicBlock;
+class PreAstContext;
 
 struct PreAstBasicBlockEdge
 {
@@ -46,13 +47,16 @@ struct PreAstBasicBlockEdge
 
 struct PreAstBasicBlock
 {
-	llvm::SmallVector<NOT_NULL(PreAstBasicBlockEdge), 8> predecessors;
-	llvm::SmallVector<NOT_NULL(PreAstBasicBlockEdge), 2> successors;
+	using Pred = llvm::SmallVector<NOT_NULL(PreAstBasicBlockEdge), 8>;
+	using Succ = llvm::SmallVector<NOT_NULL(PreAstBasicBlockEdge), 2>;
+
+	Pred predecessors;
+	Succ successors;
 	
 	llvm::BasicBlock* block;
 	StatementReference blockStatement;
 	
-	PreAstBasicBlock() = default;
+	PreAstBasicBlock(PreAstContext* parent);
 	PreAstBasicBlock(const PreAstBasicBlock&) = delete;
 	PreAstBasicBlock(PreAstBasicBlock&&);
 	
@@ -60,6 +64,14 @@ struct PreAstBasicBlock
 	
 	void swap(PreAstBasicBlock& block);
 	void printAsOperand(llvm::raw_ostream& os, bool printType);
+
+	PreAstContext* getParent() const
+	{
+		return parent;
+	}
+
+private:
+	PreAstContext* parent;
 };
 
 class PreAstContext
@@ -90,7 +102,7 @@ public:
 	
 	PreAstBasicBlock& createBlock()
 	{
-		blockList.emplace_back();
+		blockList.emplace_back(this);
 		return blockList.back();
 	}
 	
@@ -121,14 +133,17 @@ struct PreAstBasicBlockRegionTraits
 {
 	typedef PreAstContext FuncT;
 	typedef PreAstBasicBlock BlockT;
-	typedef llvm::DominatorTreeBase<PreAstBasicBlock> DomTreeT;
+	typedef llvm::DominatorTreeBase<PreAstBasicBlock, false> DomTreeT;
 	typedef llvm::DomTreeNodeBase<PreAstBasicBlock> DomTreeNodeT;
 	typedef llvm::ForwardDominanceFrontierBase<PreAstBasicBlock> DomFrontierT;
-	typedef llvm::DominatorTreeBase<PreAstBasicBlock> PostDomTreeT;
+	typedef llvm::DominatorTreeBase<PreAstBasicBlock, true> PostDomTreeT;
 };
 
 template<typename Iterator, typename Transformer>
-struct PreAstBasicBlockIterator : public std::iterator<std::input_iterator_tag, NOT_NULL(PreAstBasicBlock)>
+struct PreAstBasicBlockIterator : public std::iterator<std::bidirectional_iterator_tag,
+													   PreAstBasicBlock*, int,
+													   NOT_NULL(PreAstBasicBlock),
+													   PreAstBasicBlock*>
 {
 	typename std::remove_reference<Iterator>::type base;
 	Transformer transformer;
@@ -148,11 +163,24 @@ struct PreAstBasicBlockIterator : public std::iterator<std::input_iterator_tag, 
 		++base;
 		return *this;
 	}
+
+	PreAstBasicBlockIterator& operator--()
+	{
+		--base;
+		return *this;
+	}
 	
 	PreAstBasicBlockIterator operator++(int)
 	{
 		auto copy = *this;
 		++*this;
+		return copy;
+	}
+
+	PreAstBasicBlockIterator operator--(int)
+	{
+		auto copy = *this;
+		--*this;
 		return copy;
 	}
 	
@@ -180,12 +208,12 @@ namespace
 		return PreAstBasicBlockIterator<Iterator, Action>(std::forward<Iterator>(iter), std::forward<Action>(action));
 	}
 
-	auto makeSuccessorIterator(decltype(PreAstBasicBlock().successors)::iterator iter)
+	auto makeSuccessorIterator(PreAstBasicBlock::Succ::iterator iter)
 	{
 		return makePreAstBlockIterator(iter, [](PreAstBasicBlockEdge* edge) { return edge->to; });
 	}
 
-	auto makePredecessorIterator(decltype(PreAstBasicBlock().predecessors)::iterator iter)
+	auto makePredecessorIterator(PreAstBasicBlock::Pred::iterator iter)
 	{
 		return makePreAstBlockIterator(iter, [](PreAstBasicBlockEdge* edge) { return edge->from; });
 	}
@@ -200,7 +228,7 @@ template<>
 struct llvm::GraphTraits<PreAstBasicBlock*>
 {
 	typedef PreAstBasicBlock* NodeRef;
-	typedef decltype(makeSuccessorIterator(std::declval<decltype(PreAstBasicBlock().successors)::iterator>())) ChildIteratorType;
+	typedef decltype(makeSuccessorIterator(std::declval<PreAstBasicBlock::Succ::iterator>())) ChildIteratorType;
 	
 	static NodeRef getEntryNode(PreAstBasicBlock* block)
 	{
@@ -222,7 +250,7 @@ template<>
 struct llvm::GraphTraits<llvm::Inverse<PreAstBasicBlock*>>
 {
 	typedef PreAstBasicBlock* NodeRef;
-	typedef decltype(makePredecessorIterator(std::declval<decltype(PreAstBasicBlock().successors)::iterator>())) ChildIteratorType;
+	typedef decltype(makePredecessorIterator(std::declval<PreAstBasicBlock::Succ::iterator>())) ChildIteratorType;
 	
 	static NodeRef getEntryNode(PreAstBasicBlock* block)
 	{

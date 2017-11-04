@@ -6,10 +6,13 @@ if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message(SEND_ERROR "clang is required to build")
 endif()
 
-set(CMAKE_BUILD_TYPE Debug)
+if (NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Debug)
+endif()
+
 set(CMAKE_CXX_STANDARD 14)
 
-find_package(LLVM 4.0 REQUIRED CONFIG)
+find_package(LLVM 6.0 REQUIRED CONFIG)
 find_package(PythonLibs 2.7 REQUIRED)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION} @ ${LLVM_DIR}")
@@ -35,10 +38,12 @@ add_library(emu OBJECT ${emuasms})
 
 ### fcd ###
 set(subdirs fcd/ fcd/ast fcd/callconv fcd/clang fcd/codegen fcd/cpu fcd/executables fcd/symbols)
+set(bindingspy "${CMAKE_SOURCE_DIR}/fcd/python/bindings.py")
 set(pythonbindingsfile "${CMAKE_CURRENT_BINARY_DIR}/bindings.cpp")
 set(subdirs ${subdirs} fcd/python)
 add_custom_command(OUTPUT ${pythonbindingsfile}
-				   COMMAND "${CMAKE_C_COMPILER}" -E ${LLVM_DEFINITIONS} -isystem ${LLVM_INCLUDE_DIRS} "${LLVM_INCLUDE_DIRS}/llvm-c/Core.h" | python "${CMAKE_SOURCE_DIR}/fcd/python/bindings.py" > ${pythonbindingsfile})
+				   COMMAND "${CMAKE_C_COMPILER}" -E ${LLVM_DEFINITIONS} -isystem ${LLVM_INCLUDE_DIRS} "${LLVM_INCLUDE_DIRS}/llvm-c/Core.h" | python ${bindingspy} > ${pythonbindingsfile}
+				   DEPENDS ${bindingspy})
 
 ### header search paths file ###
 execute_process(COMMAND "${CMAKE_CXX_COMPILER}" -E -x c++ -v /dev/null OUTPUT_VARIABLE dummy ERROR_VARIABLE defaultHeaderSearchPathList)
@@ -77,7 +82,7 @@ execute_process(COMMAND ldd "${LLVM_LIBRARY_DIR}/libclang.so" COMMAND grep -q li
 if (${linked_to_libllvm} EQUAL 0)
 	message(STATUS "Link to LLVM shared library.")
 	# XXX: This shouldn't reference the specific LLVM version.
-	set(llvm_libs -lLLVM-4.0)
+	set(llvm_libs -lLLVM-6.0)
 else()
 	message(STATUS "Link to LLVM static libraries.")
 	llvm_map_components_to_libnames(llvm_libs analysis asmparser bitreader codegen core coverage instcombine instrumentation ipo irreader linker mc mcparser object option passes profiledata scalaropts support target transformutils vectorize)

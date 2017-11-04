@@ -130,6 +130,9 @@ class PythonMethod(object):
 		if cFunction.returnType in callbacks:
 			raise ValueError, "callback type %s" % cFunction.returnType
 
+		if cFunction.name == "LLVMDumpType":
+			raise ValueError, "LLVMDumpType might not be defined"
+
 		self.function = cFunction
 		self.name = self.function.name[4:]
 		self.selfType = None
@@ -169,11 +172,7 @@ class PythonMethod(object):
 					params.append(PythonParameter("object", refType))
 				elif param.type in enums:
 					params.append(PythonParameter("int", param.type))
-				elif param.type == "unsigned":
-					params.append(PythonParameter("int"))
-				elif param.type == "unsigned long long":
-					params.append(PythonParameter("int"))
-				elif param.type == "long long":
+				elif param.type in ["unsigned long long", "int", "unsigned", "long long"]:
 					params.append(PythonParameter("int"))
 				elif param.type == "LLVMBool":
 					params.append(PythonParameter("bool"))
@@ -249,6 +248,11 @@ for returnType, name, parameters in prototypeRE.findall(contents):
 		classes[classType].addMethod(method)
 	except ValueError, message:
 		sys.stderr.write("cannot use %s because %s\n" % (p, message))
+
+# Special case for classes that have no methods
+for refName in ["LLVMMetadataRef"]:
+	c = PythonClass(refName)
+	classes[c.name()] = c
 
 #
 # do post-processing here

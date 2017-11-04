@@ -200,8 +200,7 @@ TranslationContext::TranslationContext(LLVMContext& context, Executable& executa
 		ConstantInt::get(int64Ty, config.address_size),
 		ConstantInt::get(int32Ty, config.ip),
 		ConstantInt::get(int32Ty, config.sp),
-		ConstantInt::get(int32Ty, config.fp),
-		nullptr);
+		ConstantInt::get(int32Ty, config.fp));
 
 	configVariable = new GlobalVariable(*module, configTy, true, GlobalVariable::PrivateLinkage, configConstant, "config");
 	
@@ -263,7 +262,7 @@ Function* TranslationContext::createFunction(uint64_t baseAddress)
 	BasicBlock* entry = &fn->back();
 	
 	Argument* registers = &*fn->arg_begin();
-	auto flags = new AllocaInst(irgen->getFlagsTy(), "flags", entry);
+	auto flags = new AllocaInst(irgen->getFlagsTy(), 0u, "flags", entry);
 	
 	ArrayRef<Value*> ipGepIndices = irgen->getIpOffset();
 	auto ipPointer = GetElementPtrInst::CreateInBounds(registers, ipGepIndices, "", entry);

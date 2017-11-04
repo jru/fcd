@@ -18,7 +18,7 @@
 #include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/IR/Function.h>
 #include <llvm/Pass.h>
-#include <llvm/Transforms/Utils/MemorySSA.h>
+#include <llvm/Analysis/MemorySSA.h>
 
 #include <cassert>
 #include <deque>

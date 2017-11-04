@@ -10,6 +10,7 @@
 #include "passes.h"
 
 #include <llvm/ADT/PostOrderIterator.h>
+#include <llvm/Analysis/MemorySSAUpdater.h>
 #include <llvm/IR/PatternMatch.h>
 
 using namespace llvm;
@@ -72,12 +73,13 @@ namespace
 				}
 			}
 			
+			MemorySSAUpdater updater(&mssa);
 			for (LoadInst* deletedLoad : deletedLoads)
 			{
 				auto access = mssa.getMemoryAccess(deletedLoad);
 				assert(access != nullptr);
 				deletedLoad->eraseFromParent();
-				mssa.removeMemoryAccess(access);
+				updater.removeMemoryAccess(access);
 			}
 			
 			return changed;
